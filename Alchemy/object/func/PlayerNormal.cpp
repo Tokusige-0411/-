@@ -1,0 +1,46 @@
+#include <DxLib.h>
+#include <scene/SceneMng.h>
+#include "PlayerNormal.h"
+#include "../Player.h"
+#include <Input/InputState.h>
+#include <UI_Mng.h>
+#include <Camera.h>
+
+void PlayerNormal::operator()(Obj& player, std::vector<sharedObj>& objList)
+{
+	// 何も持ってないとき
+		// 今後持てる数が増える可能性があるので条件が変わるかも
+
+	// ターゲット検索
+	for (auto obj : objList)
+	{
+		if (LengthSquare((*obj).pos(), player._pos) > player._searchRange * player._searchRange)
+		{
+			// 上でソートしてるので索敵範囲を超えた敵がいたら判定終わり
+			break;
+		}
+
+		// holden,thrwon,deathの時は持てない
+		if ((*obj).weight() > ((Player&)player).holdWeightMax())
+		{
+			continue;
+		}
+
+		if ((*obj)._unitID != UNIT_ID::PLAYER && static_cast<int>((*obj).state()) >= static_cast<int>(STATE::THROWN))
+		{
+			continue;
+		}
+
+		player._tageObj = obj;
+		((Player&)player).MakeBtnGuide(INPUT_ID::BTN_B);
+		break;
+	}
+
+	// 持つ
+	if (!(player._tageObj.expired()) && (((*player._input).btnState(INPUT_ID::BTN_B).first && !(*player._input).btnState(INPUT_ID::BTN_B).second)))
+	{
+		lpSceneMng.AddActQue({ ACT_QUE::HOLD,player });
+		lpSceneMng.AddSoundQue({ lpSoundMng.GetID(SOUND::HOLD)[0], 255 , player.pos().x, player.pos().y });
+	}
+}
+
